@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dikshitar's Sacred Journey — Interactive Map with Compositions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Noto Sans Tamil', 'Playfair Display', Georgia, serif;
+      background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #fff;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    
+    h1 {
+      font-size: 2.8rem;
+      font-family: 'Noto Sans Tamil', serif;
+      background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      font-size: 1.3rem;
+      color: #e0e0e0;
+      margin-bottom: 5px;
+    }
+    
+    .tagline {
+      font-size: 1rem;
+      color: #FFD700;
+      font-style: italic;
+    }
+    
+    .main-content {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    
+    .map-container {
+      flex: 1;
+      position: relative;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid rgba(255, 215, 0, 0.2);
+    }
+    
+    .map-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    .location-marker {
+      cursor: pointer;
+    }
+    
+    .location-marker circle.main-dot {
+      transition: all 0.2s ease;
+    }
+    
+    .location-marker:hover circle.main-dot {
+      filter: drop-shadow(0 0 12px currentColor);
+    }
+    
+    .location-marker.selected circle.main-dot {
+      filter: drop-shadow(0 0 20px currentColor);
+      stroke-width: 4;
+    }
+    
+    .journey-path {
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 8 4;
+      animation: dashMove 30s linear infinite;
+    }
+    
+    @keyframes dashMove {
+      0% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -1000; }
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 0.2; }
+      100% { opacity: 0.6; }
+    }
+    
+    .pulse-ring {
+      opacity: 0;
+    }
+    
+    .info-panel {
+      width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: sticky;
+      top: 20px;
+      align-self: flex-start;
+      height: calc(100vh - 60px);
+    }
+    
+    .info-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .info-panel::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+    
+    .info-panel::-webkit-scrollbar-thumb {
+      background: rgba(255, 215, 0, 0.3);
+      border-radius: 3px;
+    }
+    
+    .location-card {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 15px;
+      padding: 20px;
+      border: 1px solid rgba(255, 215, 0, 0.2);
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+    }
+    
+    .location-card::-webkit-scrollbar {
+      width: 5px;
+    }
+    
+    .location-card::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+    
+    .location-card::-webkit-scrollbar-thumb {
+      background: rgba(255, 215, 0, 0.4);
+      border-radius: 3px;
+    }
+    
+    .location-card.active {
+      border-color: var(--active-color, #FFD700);
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(0, 0, 0, 0.3));
+    }
+    
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    }
+    
+    .type-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+    }
+    
+    .type-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .location-name-ta {
+      font-size: 1.8rem;
+      color: #FFD700;
+      margin-bottom: 5px;
+    }
+    
+    .location-name-en {
+      font-size: 1.2rem;
+      color: #e0e0e0;
+      margin-bottom: 12px;
+    }
+    
+    .location-description {
+      font-size: 0.95rem;
+      color: #b0b0b0;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+    
+    .deity-info {
+      background: rgba(255, 215, 0, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .deity-label {
+      font-size: 0.7rem;
+      color: #FFD700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .deity-name {
+      font-size: 1rem;
+      color: #fff;
+      margin-top: 3px;
+    }
+    
+    .compositions-section {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: auto;
+      clear: both;
+    }
+    
+    .compositions-title {
+      font-size: 0.8rem;
+      color: #FFD700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .compositions-title::before {
+      content: "🎵";
+    }
+    
+    .composition-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-left: 3px solid #FFD700;
+    }
+    
+    .composition-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .composition-name {
+      font-size: 0.95rem;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    
+    .composition-raga {
+      font-size: 0.85rem;
+      color: #FFD700;
+    }
+    
+    .composition-tala {
+      font-size: 0.75rem;
+      color: #888;
+    }
+    
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #666;
+      text-align: center;
+      padding: 40px;
+    }
+    
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+    
+    .legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      color: #ccc;
+    }
+    
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    
+    .stat-box {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+      border: 1px solid rgba(255, 215, 0, 0.1);
+    }
+    
+    .stat-number {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+    
+    .stat-label {
+      font-size: 0.65rem;
+      color: #888;
+      margin-top: 2px;
+    }
+    
+    .route-info {
+      background: rgba(255, 165, 0, 0.1);
+      border: 1px solid rgba(255, 165, 0, 0.3);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.85rem;
+      color: #FFA500;
+    }
+    
+    .route-info strong {
+      color: #FFD700;
+    }
+    
+    footer {
+      text-align: center;
+      margin-top: 25px;
+      padding: 15px;
+      color: #666;
+    }
+    
+    footer a {
+      color: #FFD700;
+      text-decoration: none;
+    }
+    
+    @media (max-width: 1200px) {
+      .main-content {
+        flex-direction: column;
+      }
+      .info-panel {
+        width: 100%;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      h1 { font-size: 2rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>என் வழி தனி வழி</h1>
+      <p class="subtitle">Muthuswami Dikshitar's Sacred Journey — Complete Compositions Map</p>
+      <p class="tagline">250th Birth Anniversary • 1775-1835 • Hover over locations to see compositions</p>
+    </header>
+    
+    <div class="main-content">
+      <div class="map-container">
+        <svg class="map-svg" viewBox="150 100 600 950" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#FFD700"/>
+              <stop offset="25%" style="stop-color:#FFA500"/>
+              <stop offset="50%" style="stop-color:#FF6B6B"/>
+              <stop offset="75%" style="stop-color:#FFA500"/>
+              <stop offset="100%" style="stop-color:#FFD700"/>
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          
+          <!-- India Outline -->
+          <path d="M380 155 L520 140 L590 175 L640 230 L660 300 L640 380 L615 460 L640 540 L615 620 L640 700 L610 780 L565 860 L510 940 L450 1010 L380 1050 L310 1020 L250 950 L210 860 L195 770 L210 680 L195 590 L215 500 L195 410 L215 320 L200 240 L230 175 L310 145 L380 155" 
+                fill="rgba(255,255,255,0.03)" 
+                stroke="rgba(255,215,0,0.2)" 
+                stroke-width="2"/>
+          
+          <!-- JOURNEY ROUTE -->
+          <!-- Phase 1: Thiruvarur to Chennai to Varanasi -->
+          <path class="journey-path" stroke="url(#routeGradient)" 
+                d="M475 745 
+                   C 460 700, 450 650, 445 560
+                   L 445 560
+                   C 480 450, 510 380, 530 340
+                   L 530 340
+                   C 550 280, 560 240, 560 240
+                   L 560 240
+                   C 540 210, 510 195, 505 195"/>
+          
+          <!-- Phase 2: Return - Varanasi to Thiruttani -->
+          <path class="journey-path" stroke="url(#routeGradient)" stroke-dasharray="6 3"
+                d="M530 340
+                   C 500 400, 470 450, 455 520
+                   L 455 520
+                   C 450 540, 430 545, 415 550"/>
+          
+          <!-- Phase 3: Tamil Nadu Circuit -->
+          <path class="journey-path" stroke="url(#routeGradient)"
+                d="M415 550
+                   L 430 580
+                   L 450 605
+                   L 475 640
+                   L 478 680
+                   L 475 745"/>
+          
+          <!-- Phase 4: Thiruvarur to Trichy/Thanjavur -->
+          <path class="journey-path" stroke="url(#routeGradient)"
+                d="M475 745
+                   L 440 740
+                   L 425 712
+                   L 395 740
+                   L 390 755"/>
+          
+          <!-- Phase 5: South Tamil Nadu -->
+          <path class="journey-path" stroke="url(#routeGradient)"
+                d="M475 745
+                   L 370 850
+                   L 385 870
+                   L 425 915
+                   L 375 930
+                   L 340 920
+                   L 355 895"/>
+          
+          <!-- Phase 6: Kerala -->
+          <path class="journey-path" stroke="url(#routeGradient)"
+                d="M370 850
+                   L 305 865
+                   L 275 835"/>
+          
+          <!-- Region Labels -->
+          <text x="520" y="175" font-size="11" fill="rgba(135,206,235,0.8)" font-weight="bold">NORTH INDIA &amp; NEPAL</text>
+          <text x="500" y="475" font-size="10" fill="rgba(221,160,221,0.8)" font-weight="bold">ANDHRA PRADESH</text>
+          <text x="300" y="545" font-size="11" fill="rgba(80,200,120,0.8)" font-weight="bold">TAMIL NADU</text>
+          <text x="220" y="815" font-size="10" fill="rgba(255,165,0,0.8)" font-weight="bold">KERALA</text>
+          
+          <!-- ============ LOCATION MARKERS ============ -->
+          
+          <!-- BADRINATH -->
+          <g class="location-marker" data-location="badrinath">
+            <circle class="pulse-ring" cx="505" cy="195" r="8" fill="none" stroke="#FFA500" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="505" cy="195" r="8" fill="#FFA500" stroke="#fff" stroke-width="2"/>
+            <text x="518" y="200" font-size="10" fill="#fff" opacity="0.9">Badrinath</text>
+          </g>
+          
+          <!-- KATHMANDU -->
+          <g class="location-marker" data-location="kathmandu">
+            <circle class="pulse-ring" cx="560" cy="240" r="8" fill="none" stroke="#FFA500" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="560" cy="240" r="8" fill="#FFA500" stroke="#fff" stroke-width="2"/>
+            <text x="573" y="245" font-size="10" fill="#fff" opacity="0.9">Kathmandu</text>
+          </g>
+          
+          <!-- VARANASI -->
+          <g class="location-marker" data-location="varanasi">
+            <circle class="pulse-ring" cx="530" cy="340" r="8" fill="none" stroke="#FF6B6B" stroke-width="2"/>
+            <circle class="main-dot" cx="530" cy="340" r="12" fill="#FF6B6B" stroke="#fff" stroke-width="3" filter="url(#glow)"/>
+            <text x="548" y="337" font-size="12" fill="#fff" font-weight="bold">Varanasi</text>
+            <text x="548" y="352" font-size="9" fill="#FF6B6B">5-6 Years</text>
+          </g>
+          
+          <!-- SRI KALAHASTI -->
+          <g class="location-marker" data-location="kalahasti">
+            <circle class="pulse-ring" cx="470" cy="490" r="8" fill="none" stroke="#DDA0DD" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="470" cy="490" r="8" fill="#DDA0DD" stroke="#fff" stroke-width="2"/>
+            <text x="483" y="488" font-size="9" fill="#fff" opacity="0.9">Sri Kalahasti</text>
+            <text x="483" y="500" font-size="8" fill="#DDA0DD">💨 Air</text>
+          </g>
+          
+          <!-- TIRUPATHI -->
+          <g class="location-marker" data-location="tirupathi">
+            <circle class="pulse-ring" cx="455" cy="520" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="455" cy="520" r="9" fill="#FF6B6B" stroke="#fff" stroke-width="2"/>
+            <text x="468" y="525" font-size="10" fill="#fff" opacity="0.9">Tirupathi</text>
+          </g>
+          
+          <!-- CHENNAI -->
+          <g class="location-marker" data-location="chennai">
+            <circle class="pulse-ring" cx="445" cy="560" r="8" fill="none" stroke="#87CEEB" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="445" cy="560" r="7" fill="#87CEEB" stroke="#fff" stroke-width="2"/>
+            <text x="458" y="558" font-size="9" fill="#fff" opacity="0.9">Chennai</text>
+            <text x="458" y="570" font-size="8" fill="#87CEEB">Notuswarams</text>
+          </g>
+          
+          <!-- THIRUTTANI -->
+          <g class="location-marker" data-location="thiruttani">
+            <circle class="pulse-ring" cx="415" cy="550" r="10" fill="none" stroke="#50C878" stroke-width="2"/>
+            <circle class="main-dot" cx="415" cy="550" r="10" fill="#50C878" stroke="#FFD700" stroke-width="3" filter="url(#glow)"/>
+            <text x="365" y="543" font-size="10" fill="#50C878" font-weight="bold">Thiruttani ★</text>
+            <text x="370" y="556" font-size="8" fill="#fff">First Kriti</text>
+          </g>
+          
+          <!-- KANCHIPURAM -->
+          <g class="location-marker" data-location="kanchipuram">
+            <circle class="pulse-ring" cx="430" cy="580" r="8" fill="none" stroke="#DDA0DD" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="430" cy="580" r="8" fill="#DDA0DD" stroke="#fff" stroke-width="2"/>
+            <text x="443" y="578" font-size="9" fill="#fff" opacity="0.9">Kanchipuram</text>
+            <text x="443" y="590" font-size="8" fill="#DDA0DD">🌍 Earth</text>
+          </g>
+          
+          <!-- TIRUVANNAMALAI -->
+          <g class="location-marker" data-location="tiruvannamalai">
+            <circle class="pulse-ring" cx="450" cy="605" r="8" fill="none" stroke="#DDA0DD" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="450" cy="605" r="8" fill="#DDA0DD" stroke="#fff" stroke-width="2"/>
+            <text x="463" y="603" font-size="9" fill="#fff" opacity="0.9">Tiruvannamalai</text>
+            <text x="463" y="615" font-size="8" fill="#DDA0DD">🔥 Fire</text>
+          </g>
+          
+          <!-- CHIDAMBARAM -->
+          <g class="location-marker" data-location="chidambaram">
+            <circle class="pulse-ring" cx="475" cy="640" r="8" fill="none" stroke="#DDA0DD" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="475" cy="640" r="8" fill="#DDA0DD" stroke="#fff" stroke-width="2"/>
+            <text x="488" y="638" font-size="9" fill="#fff" opacity="0.9">Chidambaram</text>
+            <text x="488" y="650" font-size="8" fill="#DDA0DD">✨ Space</text>
+          </g>
+          
+          <!-- VAITHEESWARAN KOIL -->
+          <g class="location-marker" data-location="vaitheeswaran">
+            <circle class="pulse-ring" cx="478" cy="680" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="478" cy="680" r="6" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+            <text x="490" y="683" font-size="8" fill="#fff" opacity="0.8">Vaitheeswaran Koil</text>
+          </g>
+          
+          <!-- MAYURAM -->
+          <g class="location-marker" data-location="mayuram">
+            <circle class="pulse-ring" cx="485" cy="700" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="485" cy="700" r="5" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+            <text x="495" y="703" font-size="8" fill="#fff" opacity="0.8">Mayuram</text>
+          </g>
+          
+          <!-- NAGAPATTINAM -->
+          <g class="location-marker" data-location="nagapattinam">
+            <circle class="pulse-ring" cx="500" cy="720" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="500" cy="720" r="5" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+            <text x="510" y="723" font-size="8" fill="#fff" opacity="0.8">Nagapattinam</text>
+          </g>
+          
+          <!-- THIRUVARUR - BIRTHPLACE -->
+          <g class="location-marker" data-location="thiruvarur">
+            <circle cx="475" cy="745" r="22" fill="none" stroke="#FFD700" stroke-width="1" opacity="0.3"/>
+            <circle cx="475" cy="745" r="17" fill="none" stroke="#FFD700" stroke-width="1.5" opacity="0.5"/>
+            <circle class="pulse-ring" cx="475" cy="745" r="12" fill="none" stroke="#FFD700" stroke-width="2"/>
+            <circle class="main-dot" cx="475" cy="745" r="14" fill="#FFD700" stroke="#fff" stroke-width="4" filter="url(#glow)"/>
+            <text x="420" y="775" font-size="13" fill="#FFD700" font-weight="bold">THIRUVARUR</text>
+            <text x="432" y="790" font-size="9" fill="#fff">திருவாரூர் • Birthplace</text>
+          </g>
+          
+          <!-- SWAMIMALAI -->
+          <g class="location-marker" data-location="swamimalai">
+            <circle class="pulse-ring" cx="448" cy="720" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="448" cy="720" r="6" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+            <text x="400" y="718" font-size="8" fill="#fff" opacity="0.8">Swamimalai</text>
+          </g>
+          
+          <!-- MANNARGUDI -->
+          <g class="location-marker" data-location="mannargudi">
+            <circle class="pulse-ring" cx="455" cy="765" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="455" cy="765" r="5" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+          </g>
+          
+          <!-- THIRUVAIYARU -->
+          <g class="location-marker" data-location="thiruvaiyaru">
+            <circle class="pulse-ring" cx="425" cy="712" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="425" cy="712" r="5" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+            <text x="378" y="710" font-size="8" fill="#fff" opacity="0.8">Thiruvaiyaru</text>
+          </g>
+          
+          <!-- THANJAVUR -->
+          <g class="location-marker" data-location="thanjavur">
+            <circle class="pulse-ring" cx="440" cy="740" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="440" cy="740" r="8" fill="#FF6B6B" stroke="#fff" stroke-width="2"/>
+            <text x="395" y="738" font-size="9" fill="#fff" opacity="0.9">Thanjavur</text>
+          </g>
+          
+          <!-- THIRUVANAIKKAVAL -->
+          <g class="location-marker" data-location="thiruvanaikkaval">
+            <circle class="pulse-ring" cx="395" cy="740" r="8" fill="none" stroke="#DDA0DD" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="395" cy="740" r="7" fill="#DDA0DD" stroke="#fff" stroke-width="2"/>
+            <text x="340" y="738" font-size="8" fill="#fff" opacity="0.8">Thiruvanaikkaval</text>
+            <text x="355" y="750" font-size="7" fill="#DDA0DD">💧 Water</text>
+          </g>
+          
+          <!-- SRIRANGAM -->
+          <g class="location-marker" data-location="srirangam">
+            <circle class="pulse-ring" cx="390" cy="758" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="390" cy="758" r="7" fill="#FF6B6B" stroke="#fff" stroke-width="2"/>
+            <text x="340" y="770" font-size="9" fill="#fff" opacity="0.9">Srirangam</text>
+          </g>
+          
+          <!-- MADURAI -->
+          <g class="location-marker" data-location="madurai">
+            <circle class="pulse-ring" cx="370" cy="850" r="8" fill="none" stroke="#FF6B6B" stroke-width="2"/>
+            <circle class="main-dot" cx="370" cy="850" r="10" fill="#FF6B6B" stroke="#fff" stroke-width="2" filter="url(#glow)"/>
+            <text x="315" y="848" font-size="11" fill="#fff" font-weight="bold">Madurai</text>
+            <text x="320" y="862" font-size="8" fill="#FF6B6B">Meenakshi Kritis</text>
+          </g>
+          
+          <!-- ALAGARKOIL -->
+          <g class="location-marker" data-location="alagarkoil">
+            <circle class="pulse-ring" cx="385" cy="870" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="385" cy="870" r="5" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+            <text x="395" y="873" font-size="8" fill="#fff" opacity="0.8">Alagarkoil</text>
+          </g>
+          
+          <!-- RAMESWARAM -->
+          <g class="location-marker" data-location="rameswaram">
+            <circle class="pulse-ring" cx="425" cy="915" r="8" fill="none" stroke="#FFA500" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="425" cy="915" r="8" fill="#FFA500" stroke="#fff" stroke-width="2"/>
+            <text x="438" y="912" font-size="9" fill="#fff" opacity="0.9">Rameswaram</text>
+            <text x="438" y="924" font-size="8" fill="#FFA500">Southernmost</text>
+          </g>
+          
+          <!-- TIRUCHENDUR -->
+          <g class="location-marker" data-location="tiruchendur">
+            <circle class="pulse-ring" cx="375" cy="930" r="8" fill="none" stroke="#FFA500" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="375" cy="930" r="6" fill="#FFA500" stroke="#fff" stroke-width="2"/>
+            <text x="325" y="935" font-size="8" fill="#fff" opacity="0.8">Tiruchendur</text>
+          </g>
+          
+          <!-- KAZHUGUMALAI -->
+          <g class="location-marker" data-location="kazhugumalai">
+            <circle class="pulse-ring" cx="340" cy="920" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="340" cy="920" r="5" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+            <text x="285" y="918" font-size="8" fill="#fff" opacity="0.8">Kazhugumalai</text>
+          </g>
+          
+          <!-- THIRUNELVELI -->
+          <g class="location-marker" data-location="thirunelveli">
+            <circle class="pulse-ring" cx="330" cy="945" r="8" fill="none" stroke="#FF6B6B" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="330" cy="945" r="5" fill="#FF6B6B" stroke="#fff" stroke-width="1.5"/>
+            <text x="280" y="955" font-size="8" fill="#fff" opacity="0.8">Thirunelveli</text>
+          </g>
+          
+          <!-- ETTAYAPURAM - FINAL -->
+          <g class="location-marker" data-location="ettayapuram">
+            <circle cx="355" cy="895" r="16" fill="none" stroke="#DC143C" stroke-width="1" opacity="0.4"/>
+            <circle class="pulse-ring" cx="355" cy="895" r="10" fill="none" stroke="#DC143C" stroke-width="2"/>
+            <circle class="main-dot" cx="355" cy="895" r="11" fill="#DC143C" stroke="#fff" stroke-width="3" filter="url(#glow)"/>
+            <text x="270" y="888" font-size="11" fill="#DC143C" font-weight="bold">ETTAYAPURAM</text>
+            <text x="285" y="902" font-size="9" fill="#fff">Moksha • 1835</text>
+          </g>
+          
+          <!-- SABARIMALA -->
+          <g class="location-marker" data-location="sabarimala">
+            <circle class="pulse-ring" cx="305" cy="865" r="8" fill="none" stroke="#FFA500" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="305" cy="865" r="7" fill="#FFA500" stroke="#fff" stroke-width="2"/>
+            <text x="250" y="858" font-size="9" fill="#fff" opacity="0.9">Sabarimala</text>
+          </g>
+          
+          <!-- GURUVAYUR -->
+          <g class="location-marker" data-location="guruvayur">
+            <circle class="pulse-ring" cx="275" cy="835" r="8" fill="none" stroke="#FFA500" stroke-width="2" opacity="0"/>
+            <circle class="main-dot" cx="275" cy="835" r="7" fill="#FFA500" stroke="#fff" stroke-width="2"/>
+            <text x="220" y="828" font-size="9" fill="#fff" opacity="0.9">Guruvayur</text>
+          </g>
+          
+          <!-- Journey Arrow Indicators -->
+          <text x="490" y="280" font-size="20" fill="#FFD700" opacity="0.6">↑</text>
+          <text x="420" y="500" font-size="20" fill="#FFD700" opacity="0.6">↓</text>
+        </svg>
+        
+        <div class="route-info">
+          <strong>🛤️ Journey Route:</strong> Thiruvarur → Chennai → Varanasi (5-6 yrs) → Badrinath → Kathmandu → Return via Thiruttani → Tamil Nadu Circuit → Madurai → Rameswaram → Kerala → Ettayapuram (Final)
+        </div>
+      </div>
+      
+      <div class="info-panel">
+        <div class="location-card" id="locationCard">
+          <div class="empty-state">
+            <div class="empty-state-icon">🎵</div>
+            <p style="font-size: 1.1rem; margin-bottom: 10px;">Hover over any location</p>
+            <p style="font-size: 0.9rem;">இடத்தின் மீது நகர்த்தி கீர்த்தனைகளைக் காணுங்கள்</p>
+            <p style="font-size: 0.85rem; margin-top: 15px; color: #888;">See compositions at each shrine</p>
+          </div>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-number" style="color: #FFD700">31+</div>
+            <div class="stat-label">Kshetras</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number" style="color: #FF6B6B">500+</div>
+            <div class="stat-label">Kritis</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number" style="color: #50C878">72</div>
+            <div class="stat-label">Ragas</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number" style="color: #DDA0DD">5</div>
+            <div class="stat-label">Bhutas</div>
+          </div>
+        </div>
+        
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background: #FFD700"></div> Birth</div>
+          <div class="legend-item"><div class="legend-dot" style="background: #87CEEB"></div> Learning</div>
+          <div class="legend-item"><div class="legend-dot" style="background: #50C878"></div> First Kriti</div>
+          <div class="legend-item"><div class="legend-dot" style="background: #FF6B6B"></div> Kshetra</div>
+          <div class="legend-item"><div class="legend-dot" style="background: #DDA0DD"></div> Pancha Bhuta</div>
+          <div class="legend-item"><div class="legend-dot" style="background: #FFA500"></div> Pilgrimage</div>
+          <div class="legend-item"><div class="legend-dot" style="background: #DC143C"></div> Moksha</div>
+        </div>
+      </div>
+    </div>
+    
+    <footer>
+      <p>A tribute by <a href="https://www.youtube.com/watch?v=R5gO5IiVR3I" target="_blank">SundarSpeaks</a> | Reinvention in the AI Era</p>
+      <p style="margin-top: 8px; font-size: 0.9rem;">Watch "En Vazhi Thani Vazhi" — Carnatic Music for Common Man</p>
+    </footer>
+  </div>
+  
+  <script>
+    const locationData = {
+      badrinath: {
+        nameTA: "பத்ரிநாத்",
+        nameEN: "Badrinath, Uttarakhand",
+        type: "Pilgrimage",
+        typeColor: "#FFA500",
+        description: "Himalayan pilgrimage to one of the Char Dham sites. Dikshitar traveled here 250 years ago — a journey that took months through treacherous mountain paths!",
+        deity: "Badri Narayana (Vishnu)",
+        compositions: [
+          { name: "Badrachalanathe", raga: "Kedaragowla", tala: "Adi" }
+        ]
+      },
+      kathmandu: {
+        nameTA: "காட்மண்டு",
+        nameEN: "Kathmandu, Nepal",
+        type: "Pilgrimage",
+        typeColor: "#FFA500",
+        description: "The northernmost point of Dikshitar's incredible journey — Pashupatinath Temple in Nepal. A testament to his extraordinary spirit of exploration.",
+        deity: "Pashupatinath (Shiva)",
+        compositions: [
+          { name: "Pashupatim", raga: "Ranjani", tala: "Rupaka" }
+        ]
+      },
+      varanasi: {
+        nameTA: "வாரணாசி (காசி)",
+        nameEN: "Varanasi (Kashi)",
+        type: "Major Kshetra",
+        typeColor: "#FF6B6B",
+        description: "Dikshitar spent 5-6 transformative years here with Guru Chidambaranatha Yogi. He mastered Vedanta, became a Srividya Upasaka, and learnt Hindustani music — Dhrupad style and jaru gamakas.",
+        deity: "Vishwanatha, Vishalakshi, Annapurna, Kala Bhairava",
+        compositions: [
+          { name: "Kashi Vishwanathaya", raga: "Gamakakriya", tala: "Rupaka" },
+          { name: "Vishalakshim", raga: "Gamakakriya", tala: "Adi" },
+          { name: "Annapurne Vishalakshi", raga: "Sama", tala: "Rupaka" },
+          { name: "Sri Kala Bhairavaya", raga: "Unknown", tala: "—" }
+        ]
+      },
+      kalahasti: {
+        nameTA: "ஸ்ரீகாளஹஸ்தி",
+        nameEN: "Sri Kalahasti, Andhra Pradesh",
+        type: "Pancha Bhuta — VAYU (Air)",
+        typeColor: "#DDA0DD",
+        description: "VAYU STHALAM — Temple representing the Air Element. The lamp inside the sanctum flickers without any external wind, demonstrating the presence of Vayu. Part of the Pancha Bhuta series.",
+        deity: "Kalahasteeswara (Shiva)",
+        compositions: [
+          { name: "Sri Kalahastisa", raga: "Huseni", tala: "Rupaka" }
+        ]
+      },
+      tirupathi: {
+        nameTA: "திருப்பதி",
+        nameEN: "Tirupathi, Andhra Pradesh",
+        type: "Major Kshetra",
+        typeColor: "#FF6B6B",
+        description: "The Lord of the Seven Hills. Dikshitar composed 3 magnificent kritis here, describing Venkateswara mounted on Garuda amid the splendour of Seshachalam hills.",
+        deity: "Venkateswara (Vishnu)",
+        compositions: [
+          { name: "Venkatachalapate", raga: "Poornachandrika", tala: "Rupaka" },
+          { name: "Venkatagireesam", raga: "Surati", tala: "Rupaka" },
+          { name: "Srinivasa", raga: "Kharaharapriya", tala: "Adi" }
+        ]
+      },
+      chennai: {
+        nameTA: "சென்னை (மணலி)",
+        nameEN: "Chennai / Manali / Fort St. George",
+        type: "Learning",
+        typeColor: "#87CEEB",
+        description: "WHERE REINVENTION BEGAN! Young Dikshitar witnessed an English military band at Fort St. George. With an open mind, he found that the Western major scale resembled Shankarabharanam and created 40 Notuswarams — a revolutionary fusion!",
+        deity: "—",
+        compositions: [
+          { name: "Santatam Pahimam", raga: "Western/Shankarabharanam", tala: "—" },
+          { name: "Sakti Sahita Ganapathim", raga: "Western tune", tala: "—" },
+          { name: "Vara Shiva Balam", raga: "Western tune", tala: "—" },
+          { name: "+ 37 more Notuswarams", raga: "Western-influenced", tala: "—" }
+        ]
+      },
+      thiruttani: {
+        nameTA: "திருத்தணி",
+        nameEN: "Thiruttani",
+        type: "First Kriti ★",
+        typeColor: "#50C878",
+        description: "★ THE BIRTHPLACE OF GURUGUHA! After returning from Varanasi, Lord Murugan appeared before Dikshitar, placed sugar candy in his mouth, and commanded him to sing. His very first kriti was born here — and he adopted 'Guruguha' as his mudra for all 500+ compositions.",
+        deity: "Subrahmanya (Murugan)",
+        compositions: [
+          { name: "Srinathadi Guruguho Jayati ★", raga: "Mayamalavagowla", tala: "Chatusra Dhruva" },
+          { name: "+ 7 more Guruguha Vibhakti Kritis", raga: "Various", tala: "Various" }
+        ]
+      },
+      kanchipuram: {
+        nameTA: "காஞ்சிபுரம்",
+        nameEN: "Kanchipuram",
+        type: "Pancha Bhuta — PRITHVI (Earth)",
+        typeColor: "#DDA0DD",
+        description: "PRITHVI STHALAM — Temple representing the Earth Element. The city of 108+ temples where Dikshitar composed extensively on both Shaiva and Vaishnava deities.",
+        deity: "Ekamranatha (Shiva), Varadaraja (Vishnu), Kamakshi (Devi)",
+        compositions: [
+          { name: "Ekamranathaya Namaste", raga: "Mukhari", tala: "Misra Chapu" },
+          { name: "Varadaraja Ninnu", raga: "Charukesi", tala: "—" },
+          { name: "Kamakshi Kamasampurni", raga: "Bhairavi", tala: "—" },
+          { name: "Kanchi Kadambakamini", raga: "Saveri", tala: "—" }
+        ]
+      },
+      tiruvannamalai: {
+        nameTA: "திருவண்ணாமலை",
+        nameEN: "Tiruvannamalai",
+        type: "Pancha Bhuta — AGNI (Fire)",
+        typeColor: "#DDA0DD",
+        description: "AGNI STHALAM — Temple representing the Fire Element. The sacred Arunachala hill itself is worshipped as Shiva. The Karthigai Deepam festival here is world-famous.",
+        deity: "Arunachaleswara (Shiva)",
+        compositions: [
+          { name: "Arunachalesam", raga: "Saranga", tala: "Rupaka" },
+          { name: "Arunachalanganam", raga: "Deva Gandhari", tala: "—" }
+        ]
+      },
+      chidambaram: {
+        nameTA: "சிதம்பரம்",
+        nameEN: "Chidambaram",
+        type: "Pancha Bhuta — AKASHA (Space)",
+        typeColor: "#DDA0DD",
+        description: "AKASHA STHALAM — Temple representing the Space Element. The famous 'Chidambara Rahasyam' (secret of Chidambaram) represents formless space — emptiness that is everything.",
+        deity: "Nataraja (Shiva), Sivakami (Devi)",
+        compositions: [
+          { name: "Ananda Natana Prakasam", raga: "Kedaram", tala: "Misra Chapu" },
+          { name: "Chidambareswaro Rakshatu", raga: "Rudrapriya", tala: "—" },
+          { name: "Sivakami Sahajena", raga: "Mandari", tala: "—" }
+        ]
+      },
+      vaitheeswaran: {
+        nameTA: "வைத்தீஸ்வரன் கோவில்",
+        nameEN: "Vaitheeswaran Koil",
+        type: "Major Kshetra",
+        typeColor: "#FF6B6B",
+        description: "A deeply personal temple — Dikshitar's parents prayed here for a child, and he was named after the deity Muthukumaraswamy. The temple is famous for healing.",
+        deity: "Vaidyanatha (Shiva), Balambika (Devi)",
+        compositions: [
+          { name: "Balaambikayai", raga: "Keeravani", tala: "Rupaka" },
+          { name: "Sri Vaidyanatham", raga: "—", tala: "—" },
+          { name: "Muthukumaraswami", raga: "—", tala: "—" }
+        ]
+      },
+      mayuram: {
+        nameTA: "மயிலாடுதுறை",
+        nameEN: "Mayuram (Mayiladuthurai)",
+        type: "Kshetra",
+        typeColor: "#FF6B6B",
+        description: "Temple town where Parvati in the form of a peacock (Mayil) worshipped Shiva. Dikshitar composed on the presiding deity here.",
+        deity: "Mayuranathar (Shiva)",
+        compositions: [
+          { name: "Mayuranatham Anisam", raga: "Panthuvarali", tala: "Adi" }
+        ]
+      },
+      nagapattinam: {
+        nameTA: "நாகப்பட்டினம்",
+        nameEN: "Nagapattinam",
+        type: "Kshetra",
+        typeColor: "#FF6B6B",
+        description: "Ancient port city with the famous Neelayadakshi Ambal temple. Dikshitar composed on the fierce yet protective Goddess here.",
+        deity: "Neelayadakshi (Devi)",
+        compositions: [
+          { name: "Neelayadakshi", raga: "—", tala: "—" }
+        ]
+      },
+      thiruvarur: {
+        nameTA: "திருவாரூர்",
+        nameEN: "Thiruvarur",
+        type: "Birthplace & Spiritual Home",
+        typeColor: "#FFD700",
+        description: "★ BIRTHPLACE! Born here on March 24, 1775. This is the heart of Dikshitar's world — he composed the magnificent Kamalamba Navavarana Kritis (11 compositions on Sri Chakra) and Tyagaraja Vibhakti Kritis here. The largest chariot festival happens here!",
+        deity: "Tyagaraja (Shiva), Kamalamba (Devi), Nilotpalamba",
+        compositions: [
+          { name: "Kamalamba Navavarana Kritis (11)", raga: "9 Different Ragas", tala: "Various" },
+          { name: "— 1. Kamalambike", raga: "Todi", tala: "Rupaka" },
+          { name: "— 2. Kamalambam Bhajare", raga: "Kalyani", tala: "Adi" },
+          { name: "— 3. Sri Kamalambikayam", raga: "Anandabhairavi", tala: "Misra Chapu" },
+          { name: "Tyagaraja Vibhakti Kritis (8)", raga: "Multiple", tala: "Various" },
+          { name: "Tyagaraja Mahadhvajaroha", raga: "Sri", tala: "—" },
+          { name: "Nilotpalambikayam", raga: "Narayani", tala: "—" },
+          { name: "+ Many more on various deities", raga: "—", tala: "—" }
+        ]
+      },
+      swamimalai: {
+        nameTA: "சுவாமிமலை",
+        nameEN: "Swamimalai",
+        type: "Kshetra",
+        typeColor: "#FF6B6B",
+        description: "One of the Six Abodes (Arupadai Veedu) of Lord Murugan. Here, Murugan taught the meaning of 'Om' to his own father Shiva — hence 'Swaminatha' (Lord of the Lord).",
+        deity: "Swaminatha (Murugan)",
+        compositions: [
+          { name: "Swaminatha Paripalaya", raga: "Nattai", tala: "Adi" }
+        ]
+      },
+      mannargudi: {
+        nameTA: "மன்னார்குடி",
+        nameEN: "Mannargudi",
+        type: "Kshetra",
+        typeColor: "#FF6B6B",
+        description: "Famous for the Rajagopalaswamy Temple — one of the largest Krishna temples in South India. The Brahmotsavam here is spectacular.",
+        deity: "Rajagopala (Krishna)",
+        compositions: [
+          { name: "Manamanagudu Sri Rajagopala", raga: "Saveri", tala: "Adi" }
+        ]
+      },
+      thiruvaiyaru: {
+        nameTA: "திருவையாறு",
+        nameEN: "Thiruvaiyaru",
+        type: "Kshetra",
+        typeColor: "#FF6B6B",
+        description: "The town where five rivers (Ainthu Aaru) merge. Also famous as the hometown of Saint Tyagaraja (the composer, not the deity).",
+        deity: "Panchanadeeshwara (Shiva)",
+        compositions: [
+          { name: "Panchanadeeshwaram", raga: "—", tala: "—" }
+        ]
+      },
+      thanjavur: {
+        nameTA: "தஞ்சாவூர்",
+        nameEN: "Thanjavur",
+        type: "Major Kshetra",
+        typeColor: "#FF6B6B",
+        description: "The Chola capital where Dikshitar resided for 5 years. The majestic Brihadeeswara Temple (UNESCO World Heritage Site) with its 216-foot tower inspired multiple compositions.",
+        deity: "Brihadeeswara (Shiva), Brihadeeswari (Devi)",
+        compositions: [
+          { name: "Brihadeeswaro Rakshatuma", raga: "Yadukula Kambhoji", tala: "—" },
+          { name: "Brihadeeswari Samrakshatuma", raga: "—", tala: "—" },
+          { name: "Tanjanagari Viharinim", raga: "Pharaz", tala: "—" }
+        ]
+      },
+      thiruvanaikkaval: {
+        nameTA: "திருவானைக்காவல்",
+        nameEN: "Thiruvanaikkaval",
+        type: "Pancha Bhuta — APPU (Water)",
+        typeColor: "#DDA0DD",
+        description: "APPU STHALAM — Temple representing the Water Element. The Shiva Lingam here is submerged in water that springs naturally from within — even pumping cannot drain it!",
+        deity: "Jambukeshwara (Shiva), Akilandeswari (Devi)",
+        compositions: [
+          { name: "Jambupate", raga: "Yamuna Kalyani", tala: "Misra Chapu" },
+          { name: "Akilandeswari", raga: "—", tala: "—" }
+        ]
+      },
+      srirangam: {
+        nameTA: "ஸ்ரீரங்கம்",
+        nameEN: "Srirangam",
+        type: "Major Kshetra",
+        typeColor: "#FF6B6B",
+        description: "The largest functioning Hindu temple complex in the world! Lord Ranganatha reclines on Adisesha here. Dikshitar's compositions capture the grandeur magnificently.",
+        deity: "Ranganatha (Vishnu), Ranganayaki (Devi)",
+        compositions: [
+          { name: "Ranganayakam", raga: "Nayaki", tala: "Adi" },
+          { name: "Rangapura Vihara", raga: "Brindavana Saranga", tala: "Adi" },
+          { name: "Ranganatha Rakshitam", raga: "—", tala: "—" }
+        ]
+      },
+      madurai: {
+        nameTA: "மதுரை",
+        nameEN: "Madurai",
+        type: "Major Kshetra",
+        typeColor: "#FF6B6B",
+        description: "Dikshitar composed TWO complete Vibhakti series on Goddess Meenakshi — showcasing all 8 Sanskrit grammatical cases! His brother Baluswami was performing here under royal patronage.",
+        deity: "Meenakshi (Devi), Sundareswara (Shiva)",
+        compositions: [
+          { name: "Meenakshi Vibhakti Kritis (8)", raga: "Multiple", tala: "Various" },
+          { name: "— Meenakshi Me Mudam Dehi", raga: "Gamakakriya", tala: "Rupaka" },
+          { name: "— Meenambikayai", raga: "Sankarabharanam", tala: "—" },
+          { name: "Madhuramba Kritis", raga: "Multiple", tala: "Various" },
+          { name: "Sundareswaram", raga: "Sankarabharanam", tala: "—" }
+        ]
+      },
+      alagarkoil: {
+        nameTA: "அழகர்கோவில்",
+        nameEN: "Alagarkoil",
+        type: "Kshetra",
+        typeColor: "#FF6B6B",
+        description: "Near Madurai, temple of Kallazhagar (Beautiful Lord). Famous for the annual float festival where Vishnu 'visits' his sister Meenakshi.",
+        deity: "Kallazhagar (Vishnu)",
+        compositions: [
+          { name: "Alagarkoil composition", raga: "—", tala: "—" }
+        ]
+      },
+      rameswaram: {
+        nameTA: "ராமேஸ்வரம்",
+        nameEN: "Rameswaram",
+        type: "Pilgrimage",
+        typeColor: "#FFA500",
+        description: "The southernmost point of Dikshitar's journey — one of the 12 Jyotirlingas. Here Lord Rama himself worshipped Shiva before the war with Ravana.",
+        deity: "Ramanathaswamy (Shiva)",
+        compositions: [
+          { name: "Ramanatham Bhaje", raga: "Narayanagowla", tala: "Rupaka" }
+        ]
+      },
+      tiruchendur: {
+        nameTA: "திருச்செந்தூர்",
+        nameEN: "Tiruchendur",
+        type: "Pilgrimage",
+        typeColor: "#FFA500",
+        description: "One of the six abodes (Arupadai Veedu) of Lord Murugan — the only one on the seashore. The temple faces the Bay of Bengal.",
+        deity: "Subrahmanya (Murugan)",
+        compositions: [
+          { name: "Sri Subrahmanyo Mam Rakshatu", raga: "Kambhoji", tala: "Adi" }
+        ]
+      },
+      kazhugumalai: {
+        nameTA: "கழுகுமலை",
+        nameEN: "Kazhugumalai",
+        type: "Kshetra",
+        typeColor: "#FF6B6B",
+        description: "Rock-cut temple complex near Kovilpatti. The name means 'Eagle Hill' — eagles nest on these ancient rocks where Dikshitar composed.",
+        deity: "Subrahmanya (Murugan)",
+        compositions: [
+          { name: "Subrahmanyena Rakshitoham", raga: "—", tala: "—" }
+        ]
+      },
+      thirunelveli: {
+        nameTA: "திருநெல்வேலி",
+        nameEN: "Thirunelveli",
+        type: "Kshetra",
+        typeColor: "#FF6B6B",
+        description: "The 'Paddy Fenced' city with the ancient Nellaiappar Temple. Known for its beautiful temple architecture.",
+        deity: "Nellaiappar (Shiva)",
+        compositions: [
+          { name: "Nellaiappar Kriti", raga: "—", tala: "—" }
+        ]
+      },
+      ettayapuram: {
+        nameTA: "எட்டயபுரம்",
+        nameEN: "Ettayapuram",
+        type: "Final Abode — Moksha",
+        typeColor: "#DC143C",
+        description: "★ WHERE HE ATTAINED MOKSHA! On Deepavali day 1835, Dikshitar had a vision of Annapurna Devi (as his Guru had predicted). While singing 'Meenakshi Me Mudam Dehi', at the line 'Meena Lochani Pasha Mochani' (O fish-eyed one, liberator from bondage), he merged with the Divine. 'En Vazhi Thani Vazhi' — until the very end.",
+        deity: "—",
+        compositions: [
+          { name: "Meenakshi Me Mudam Dehi (Final)", raga: "Gamakakriya", tala: "Rupaka" },
+          { name: "— Last line sung: 'Meena Lochani Pasha Mochani'", raga: "—", tala: "—" }
+        ]
+      },
+      sabarimala: {
+        nameTA: "சபரிமலை",
+        nameEN: "Sabarimala, Kerala",
+        type: "Pilgrimage",
+        typeColor: "#FFA500",
+        description: "The sacred hill shrine in Kerala, dedicated to Lord Ayyappan — the son of Hari (Vishnu as Mohini) and Hara (Shiva). Dikshitar's devotion transcended sectarian boundaries.",
+        deity: "Ayyappan (Harihara Putra)",
+        compositions: [
+          { name: "Harihara Putram", raga: "Vasantha", tala: "Adi" }
+        ]
+      },
+      guruvayur: {
+        nameTA: "குருவாயூர்",
+        nameEN: "Guruvayur, Kerala",
+        type: "Pilgrimage",
+        typeColor: "#FFA500",
+        description: "The 'Dwarka of the South' — one of the most sacred Krishna temples in India. Dikshitar's Vaishnava compositions show his universal devotion beyond Shaiva traditions.",
+        deity: "Guruvayurappan (Krishna)",
+        compositions: [
+          { name: "Sri Krishnam Bhaja Manasa", raga: "Todi", tala: "Adi" }
+        ]
+      }
+    };
+    
+    const locationCard = document.getElementById('locationCard');
+    const markers = document.querySelectorAll('.location-marker');
+    
+    function showLocationInfo(locationId) {
+      const data = locationData[locationId];
+      if (!data) return;
+      
+      let compositionsHTML = data.compositions.map(comp => `
+        <div class="composition-item">
+          <div class="composition-name">${comp.name}</div>
+          <div class="composition-raga">Raga: ${comp.raga}</div>
+          ${comp.tala !== '—' ? `<div class="composition-tala">Tala: ${comp.tala}</div>` : ''}
+        </div>
+      `).join('');
+      
+      locationCard.innerHTML = `
+        <div class="card-header">
+          <div class="type-dot" style="background: ${data.typeColor}"></div>
+          <span class="type-label" style="color: ${data.typeColor}">${data.type}</span>
+        </div>
+        <div class="location-name-ta">${data.nameTA}</div>
+        <div class="location-name-en">${data.nameEN}</div>
+        <div class="location-description">${data.description}</div>
+        <div class="deity-info">
+          <div class="deity-label">Deity / தெய்வம்</div>
+          <div class="deity-name">${data.deity}</div>
+        </div>
+        <div class="compositions-section">
+          <div class="compositions-title">Compositions / கீர்த்தனைகள்</div>
+          ${compositionsHTML}
+        </div>
+      `;
+      
+      locationCard.classList.add('active');
+      locationCard.style.setProperty('--active-color', data.typeColor);
+    }
+    
+    function resetCard() {
+      locationCard.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🎵</div>
+          <p style="font-size: 1.1rem; margin-bottom: 10px;">Click on any location</p>
+          <p style="font-size: 0.9rem;">இடத்தின் மீது சொடுக்கி கீர்த்தனைகளைக் காணுங்கள்</p>
+          <p style="font-size: 0.85rem; margin-top: 15px; color: #888;">Click to see compositions at each shrine</p>
+        </div>
+      `;
+      locationCard.classList.remove('active');
+    }
+    
+    let activeMarker = null;
+    
+    markers.forEach(marker => {
+      const locationId = marker.getAttribute('data-location');
+      
+      marker.addEventListener('click', function(e) {
+        e.stopPropagation();
+        
+        // Remove highlight from previous marker
+        if (activeMarker) {
+          activeMarker.classList.remove('selected');
+        }
+        
+        // Set new active marker
+        activeMarker = marker;
+        marker.classList.add('selected');
+        
+        // Show info
+        showLocationInfo(locationId);
+      });
+    });
+  </script>
+</body>
+</html>
